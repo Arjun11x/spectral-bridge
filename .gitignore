@@ -1,0 +1,24 @@
+# Data — never commit these
+*.csv
+*.parquet
+*.h5
+
+# Model weights
+*.pth
+*.pt
+*.ckpt
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Results that regenerate
+results/checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
