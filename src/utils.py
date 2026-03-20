@@ -37,30 +37,32 @@ def get_device() -> torch.device:
 
 def ensure_dirs() -> None:
     """Create results/plots and results/checkpoints if they don't exist."""
-    os.makedirs(config.PLOTS_DIR,        exist_ok=True)
-    os.makedirs(config.CHECKPOINTS_DIR,  exist_ok=True)
+    os.makedirs(config.PLOTS_DIR,       exist_ok=True)
+    os.makedirs(config.CHECKPOINTS_DIR, exist_ok=True)
 
 
 # ── checkpointing ──────────────────────────────────────────────────────────
 
 
 def save_checkpoint(
-    model:          torch.nn.Module,
-    optimizer:      torch.optim.Optimizer,
-    scheduler:      object,
-    epoch:          int,
-    best_val_loss:  float,
-    train_losses:   list,
-    val_losses:     list,
-    path:           str = None,
+    model:         torch.nn.Module,
+    optimizer:     torch.optim.Optimizer,
+    scheduler:     object,
+    epoch:         int,
+    best_val_loss: float,
+    train_losses:  list,
+    val_losses:    list,
+    lr_history:    list = None,
+    path:          str  = None,
 ) -> None:
     """
     Save full training state so training can resume exactly from this point.
 
     Saves model weights, optimizer state, scheduler state, current epoch,
-    best validation loss, and loss history. Saving the optimizer and
-    scheduler states is essential — without them the optimizer loses its
-    momentum and adaptive LR history, causing a loss spike on resume.
+    best validation loss, loss history, and LR history. Saving the
+    optimizer and scheduler states is essential — without them the
+    optimizer loses its momentum and adaptive LR history, causing a
+    loss spike on resume.
 
     Args:
         model         : the SpectralTransformer being trained
@@ -70,6 +72,7 @@ def save_checkpoint(
         best_val_loss : best validation loss seen so far for early stopping
         train_losses  : list of training losses recorded so far
         val_losses    : list of validation losses recorded so far
+        lr_history    : list of learning rates recorded so far
         path          : save path — defaults to config.BEST_MODEL_PATH
     """
     ensure_dirs()
@@ -82,6 +85,7 @@ def save_checkpoint(
         "best_val_loss": best_val_loss,
         "train_losses":  train_losses,
         "val_losses":    val_losses,
+        "lr_history":    lr_history or [],
     }, path)
 
 
@@ -95,8 +99,8 @@ def load_checkpoint(
     Restore full training state from a saved checkpoint.
 
     Loads weights and optimizer/scheduler states directly into the
-    provided instances. Returns the metadata (epoch, losses, best val
-    loss) so the training loop knows where to resume from.
+    provided instances. Returns metadata so the training loop knows
+    exactly where to resume from.
 
     Args:
         model     : an instantiated SpectralTransformer (same architecture)
@@ -105,7 +109,8 @@ def load_checkpoint(
         path      : checkpoint path — defaults to config.BEST_MODEL_PATH
 
     Returns:
-        dict with keys: epoch, best_val_loss, train_losses, val_losses
+        dict with keys: epoch, best_val_loss, train_losses, val_losses,
+        lr_history
 
     Raises:
         FileNotFoundError if no checkpoint exists at path
@@ -127,6 +132,7 @@ def load_checkpoint(
         "best_val_loss": checkpoint["best_val_loss"],
         "train_losses":  checkpoint["train_losses"],
         "val_losses":    checkpoint["val_losses"],
+        "lr_history":    checkpoint.get("lr_history", []),
     }
 
 
