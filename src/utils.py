@@ -36,7 +36,8 @@ def get_device() -> torch.device:
 
 
 def ensure_dirs() -> None:
-    """Create results/plots and results/checkpoints if they don't exist."""
+    """Create results/ and all subdirectories if they don't exist."""
+    os.makedirs(config.RESULTS_DIR,     exist_ok=True)
     os.makedirs(config.PLOTS_DIR,       exist_ok=True)
     os.makedirs(config.CHECKPOINTS_DIR, exist_ok=True)
 
