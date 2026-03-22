@@ -125,7 +125,7 @@ Requires trained model from step 3. Saves 6 diagnostic plots to `results/plots/`
 python -m src.predict data/test_features_spectral.csv
 ```
 Saves `results/submission.csv` with 800,000 gap predictions.a/test_features_spectral.csv
-```
+
 
 ---
 
