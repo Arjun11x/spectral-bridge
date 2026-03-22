@@ -26,7 +26,7 @@ def predict(test_csv_path: str, output_path: str = None) -> str:
     Returns:
         path to the saved submission CSV
     """
-    device     = get_device()
+    device      = get_device()
     ensure_dirs()
     output_path = output_path or os.path.join(
         config.RESULTS_DIR, "submission.csv"
@@ -56,66 +56,61 @@ def predict(test_csv_path: str, output_path: str = None) -> str:
             f"Test CSV not found at {test_csv_path}."
         )
 
-    # read raw CSV to preserve Sample_ID and Time_ms for submission
-    test_df  = pd.read_csv(test_csv_path)
-    dataset  = SpectralDataset(test_csv_path)
-    loader   = DataLoader(
+    test_df = pd.read_csv(test_csv_path)
+    dataset = SpectralDataset(test_csv_path)
+    loader  = DataLoader(
         dataset,
-        batch_size=config.BATCH_SIZE * 4,  # larger batch — no gradients needed
-        shuffle=False,                      # must stay in original order
-        num_workers=0,                      # safe default for inference
-        pin_memory=torch.cuda.is_available(),
+        batch_size = config.BATCH_SIZE * 4,
+        shuffle    = False,
+        num_workers= 0,
+        pin_memory = torch.cuda.is_available(),
     )
 
     # ── run inference ──────────────────────────────────────────────────────
 
     all_predictions = []
-
     print(f"Running inference on {len(dataset):,} test samples...")
 
     with torch.no_grad():
         for batch in loader:
             x      = batch["x"].to(device)
-            y_pred = model(x)                   # [batch, 100]
+            y_pred = model(x)
             all_predictions.append(y_pred.cpu().numpy())
 
-    # shape: [n_samples, 100]
-    all_predictions = np.concatenate(all_predictions, axis=0)
+    all_predictions = np.concatenate(all_predictions, axis=0)  # [N, 100]
+    print("Inference complete.")
 
-    # ── build submission dataframe ─────────────────────────────────────────
+    # ── build submission dataframe — vectorized ────────────────────────────
 
-    # flatten predictions back to match the original CSV row order.
-    # dataset._build_samples sorts each group by Time_ms so we must
-    # reconstruct in the same order.
+    val_min = test_df["Value"].min()
+    val_max = test_df["Value"].max()
     records = []
 
     for sample_pos, (sample_id, group) in enumerate(
         test_df.groupby("Sample_ID")
     ):
-        group      = group.sort_values("Time_ms").reset_index(drop=True)
-        preds      = all_predictions[sample_pos]  # [100]
+        group    = group.sort_values("Time_ms").reset_index(drop=True)
+        preds    = all_predictions[sample_pos]  # [100]
+        gap_rows = group[group["Is_Context"] == 0]
 
-        for row_idx, row in group.iterrows():
-            if row["Is_Context"] == 0:
-                # clip predictions to observed value range to avoid
-                # out-of-distribution outputs
-                pred_value = float(np.clip(
-                    preds[int(row["Time_ms"]) - 1],
-                    test_df["Value"].min(),
-                    test_df["Value"].max(),
-                ))
-                records.append({
-                    "Sample_ID":       int(row["Sample_ID"]),
-                    "Time_ms":         int(row["Time_ms"]),
-                    "Predicted_Value": round(pred_value, 4),
-                })
+        times  = gap_rows["Time_ms"].values.astype(int)
+        values = np.clip(preds[times - 1], val_min, val_max).round(4)
+
+        for t, v in zip(times, values):
+            records.append({
+                "Sample_ID":       int(sample_id),
+                "Time_ms":         int(t),
+                "Predicted_Value": float(v),
+            })
 
     submission_df = pd.DataFrame(records)
     submission_df.to_csv(output_path, index=False)
 
-    print(f"\nSubmission saved to {output_path}")
+    print(f"\nSubmission saved to   : {output_path}")
     print(f"Total gap predictions : {len(submission_df):,}")
     print(f"Unique samples        : {submission_df['Sample_ID'].nunique():,}")
+    print(f"Value range           : {submission_df['Predicted_Value'].min():.4f} "
+          f"to {submission_df['Predicted_Value'].max():.4f}")
     print(f"\nSample preview:")
     print(submission_df.head(10).to_string(index=False))
 
