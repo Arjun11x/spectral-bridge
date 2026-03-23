@@ -81,17 +81,14 @@ spectral-bridge/
 │   ├── __init__.py            — exposes core symbols from src package
 │   ├── config.py              — all hyperparameters and paths
 │   ├── dataset.py             — SpectralDataset and DataLoader
-│   ├── model.py               — SpectralTransformer and masked MSE loss
-│   ├── train.py               — training loop with checkpointing
 │   ├── evaluate.py            — diagnostic plots and metrics
+│   ├── model.py               — SpectralTransformer and masked MSE loss
 │   ├── predict.py             — test set inference and submission generation
+│   ├── train.py               — training loop with checkpointing
 │   └── utils.py               — seed, device, checkpoint, plotting utilities
-├── results/
-│   ├── plots/                 — all generated figures
-│   └── checkpoints/           — saved model weights
 ├── .gitignore
-├── requirements.txt
-└── README.md
+├── README.md
+└── requirements.txt
 ```
 
 ---
