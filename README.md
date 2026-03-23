@@ -138,4 +138,4 @@ See `requirements.txt` for full list.
 
 ## Notebooks
 
-All notebooks are designed to run on Google Colab with a T4 GPU (notebooks 03, 04) or CPU (notebooks 01, 02, 05). Each notebook mounts Google Drive for data access and clones this repo automatically.
+All notebooks are designed to run on Google Colab with a T4 GPU (notebooks 03, 04, 05) or CPU (notebooks 01, 02). Each notebook mounts Google Drive for data access and clones this repo automatically.
